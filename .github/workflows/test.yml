@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 24.x
       - id: file_changes
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
 
       - name: Record PR number
         run: |
