@@ -12,12 +12,11 @@ const WYLDS = {
   ethereum: '0x6aD038cA6C04e885630851278ca0a856Ad9a66Cc',
 };
 
-// PRIME and AUTO stake wYLDS into Democratized Prime lending pools -- HELOC+ loans and consumer
-// auto loans respectively -- and share one global NAV. Each declares where its rate comes from:
-// `ethereum` measures the ERC4626 ratio directly, `rateToken` reads the same NAV measure from
-// Hastra's report because AUTO has not launched on Ethereum and Solana exposes no historical
-// account state. A wrapper with neither gets no pool, but stays listed so the wYLDS it holds is
-// still excluded from the wYLDS pool.
+// PRIME, AUTO, and SMB stake wYLDS into Democratized Prime lending pools and share one global
+// NAV. Each declares where its rate comes from: `ethereum` measures the ERC4626 ratio directly,
+// `rateToken` reads the same NAV measure from Hastra's report because Solana exposes no
+// historical account state. A wrapper with neither gets no pool, but stays listed so the wYLDS
+// it holds is still excluded from the wYLDS pool. SMB is Ethereum-only (no Solana product yet).
 const VAULTS = [
   {
     symbol: 'PRIME',
@@ -33,10 +32,17 @@ const VAULTS = [
     solanaMint: 'GNE6oDS6jHrfaV3GQVVCCp37fDnT7PiPuewMKBj2bqNm',
     solanaVault: 'GtWPVP3KPTJC8z9wPLAop4mPp9jZiRKzL8deDD4PfQ7C',
   },
+  {
+    symbol: 'SMB',
+    url: 'https://hastra.io/smb',
+    ethereum: '0xBd49537Cc9105E8c1651Ed12b94cD9A3D79Bf3d9',
+  },
 ];
 
 const ETHEREUM_VAULTS = VAULTS.filter((v) => v.ethereum);
+const SOLANA_VAULTS = VAULTS.filter((v) => v.solanaVault);
 const RATED_VAULTS = VAULTS.filter((v) => v.ethereum || v.rateToken);
+const SOLANA_RATED_VAULTS = RATED_VAULTS.filter((v) => v.solanaMint);
 
 const WYLDS_URL = 'https://hastra.io/wylds';
 
@@ -124,7 +130,7 @@ const bySymbol = (vaults, values) =>
 const solanaBalances = async () => {
   const [mint, ...vaults] = await solanaAccounts([
     WYLDS.solana,
-    ...VAULTS.map((v) => v.solanaVault),
+    ...SOLANA_VAULTS.map((v) => v.solanaVault),
   ]);
 
   const decimals = mint.readUInt8(MINT_DECIMALS_OFFSET);
@@ -134,7 +140,7 @@ const solanaBalances = async () => {
   return {
     supply: amount(mint, MINT_SUPPLY_OFFSET),
     vaulted: bySymbol(
-      VAULTS,
+      SOLANA_VAULTS,
       vaults.map((v) => amount(v, TOKEN_ACCOUNT_AMOUNT_OFFSET))
     ),
   };
@@ -223,7 +229,7 @@ const apy = async () => {
       underlyingTokens: [WYLDS.ethereum],
       url: WYLDS_URL,
     },
-    ...RATED_VAULTS.map((v) => ({
+    ...SOLANA_RATED_VAULTS.map((v) => ({
       pool: `${v.solanaMint}-solana`,
       chain: utils.formatChain('solana'),
       symbol: v.symbol,
